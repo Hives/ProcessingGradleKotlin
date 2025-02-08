@@ -33,6 +33,7 @@ class Processing : PApplet() {
 
         for (x in 0 until canvasWidth / gridSize) {
             for (y in 0 until canvasHeight / gridSize) {
+
                 val oddOrEven = (x + y) % 2 == 0
 
                 val gridSquareLeft = leftOffset + (x * gridSize)
@@ -59,15 +60,40 @@ class Processing : PApplet() {
                 val fgBrightness = (80 * Math.pow(1.0 - triangle((t / 200.0) + (3.0 * d / canvasWidth), 0.1), 2.0)) + 10
                 val bgBrightness = (80 * Math.pow(triangle((-t / 600.0) + (4.0 * d / canvasWidth)), 2.0)) + 10
 
-                shapeInSquare(
+                val squareRotation = (t / 120.0) + d / 200.0
+
+                val ellipseRotation = (t / 100.0) + d / 300.0
+
+                square(
                     x = gridSquareLeft.toDouble(),
                     y = topOffset + (y.toDouble() * gridSize),
                     size = gridSize.toDouble(),
-                    innerScale = innerScale,
-                    fg = ColourHSB(240, 100, fgBrightness),
-                    bg = ColourHSB(360, 100, bgBrightness),
-                    shape = if (oddOrEven) Shape.CIRCLE else Shape.SQUARE,
+                    rotation = 0.0,
+                    innerScale = 1.0,
+                    colour = ColourHSB(360, 100, bgBrightness),
                 )
+
+                if (oddOrEven) {
+                    square(
+                        x = gridSquareLeft.toDouble(),
+                        y = topOffset + (y.toDouble() * gridSize),
+                        size = gridSize.toDouble(),
+                        rotation = squareRotation,
+                        innerScale = innerScale * 0.6,
+//                        axisRatio = 0.4,
+                        colour = ColourHSB(240, 100, fgBrightness),
+                    )
+                } else {
+                    ellipse(
+                        x = gridSquareLeft.toDouble(),
+                        y = topOffset + (y.toDouble() * gridSize),
+                        size = gridSize.toDouble(),
+                        rotation = ellipseRotation,
+                        innerScale = innerScale,
+                        axisRatio = 0.6,
+                        colour = ColourHSB(240, 100, fgBrightness),
+                    )
+                }
             }
         }
 
@@ -80,31 +106,40 @@ class Processing : PApplet() {
 //        }
     }
 
-    private fun shapeInSquare(
+    private fun square(
         x: Double,
         y: Double,
         size: Double,
+        rotation: Double,
         innerScale: Double,
-        fg: ColourHSB,
-        bg: ColourHSB,
-        shape: Shape
+        colour: ColourHSB
     ) {
-        fill(bg)
-        rect(x, y, size, size)
-        fill(fg)
-        when (shape) {
-            Shape.SQUARE -> {
-                val innerSize = size * innerScale;
-                rect(x + ((size - innerSize) / 2), y + ((size - innerSize) / 2), innerSize, innerSize)
-            }
-
-            Shape.CIRCLE -> {
-                ellipse(x + (size / 2), y + (size / 2), size * innerScale, size * innerScale)
-            }
-        }
+        val offset = size * (1 - innerScale) * 0.5
+        val innerSize = size * innerScale
+        pushMatrix()
+        fill(colour)
+        translate((x + (size / 2)).toFloat(), (y + (size / 2)).toFloat())
+        rotate(rotation.toFloat())
+        rect(-innerSize / 2.0, -innerSize / 2.0, size * innerScale, size * innerScale)
+        popMatrix()
     }
 
-    private enum class Shape { SQUARE, CIRCLE }
+    private fun ellipse(
+        x: Double,
+        y: Double,
+        size: Double,
+        rotation: Double,
+        innerScale: Double,
+        axisRatio: Double,
+        colour: ColourHSB
+    ) {
+        pushMatrix()
+        fill(colour)
+        translate((x + (size / 2)).toFloat(), (y + (size / 2)).toFloat())
+        rotate(rotation.toFloat())
+        ellipse(0, 0, size * innerScale * axisRatio, size * innerScale)
+        popMatrix()
+    }
 
     private fun triangle(t: Double, offset: Double = 0.5): Double {
         val tAbs = Math.abs(t)
@@ -114,11 +149,6 @@ class Processing : PApplet() {
         } else {
             (x - offset) / (1 - offset)
         }
-    }
-
-    private fun sawtooth(t: Double): Double {
-        val tAbs = Math.abs(t)
-        return tAbs - tAbs.toInt()
     }
 
     private fun sinusoidal(t: Double): Double {
