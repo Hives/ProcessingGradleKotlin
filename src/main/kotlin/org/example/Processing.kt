@@ -5,9 +5,9 @@ import processing.core.PApplet
 
 class Processing : PApplet() {
 
-    private val canvasWidth = 1920
-    private val canvasHeight = 1080
-    private val gridSize = 40
+    private val canvasWidth = 2560
+    private val canvasHeight = 1440
+    private val gridSize = 30
 
     private val secondsToCapture = 60
     private val videoFrameRate = 60
@@ -52,11 +52,11 @@ class Processing : PApplet() {
                     ) + ((16.0 / 9.0) * Math.pow(distanceFromCenterY.toDouble(), 2.0))
                 )
 
-                val innerScale = sinusoidal((t / 1000.0) + (2.0 * d / canvasWidth))
-                    .let { if (oddOrEven) it else 1 - it }
-                    .let { 0.2 + (0.8 * it) }
+                val innerScale = sinusoidal((t / 1000.0) + (2.323453 * (if (oddOrEven) distanceFromCenterX else distanceFromCenterY) / canvasWidth))
+//                    .let { if (oddOrEven) it else 1 - it }
+//                    .let { 0.1 + (0.8 * it) }
 
-                val fgBrightness = (80 * Math.pow(triangle((t / 800.0) + (3.0 * d / canvasWidth)), 2.0)) + 10
+                val fgBrightness = (80 * Math.pow(1.0 - triangle((t / 200.0) + (3.0 * d / canvasWidth), 0.1), 2.0)) + 10
                 val bgBrightness = (80 * Math.pow(triangle((-t / 600.0) + (4.0 * d / canvasWidth)), 2.0)) + 10
 
                 shapeInSquare(
@@ -106,14 +106,19 @@ class Processing : PApplet() {
 
     private enum class Shape { SQUARE, CIRCLE }
 
-    private fun triangle(t: Double): Double {
+    private fun triangle(t: Double, offset: Double = 0.5): Double {
         val tAbs = Math.abs(t)
         val x = tAbs - tAbs.toInt()
-        return if (x < 0.5) {
-            1 - (2 * x)
+        return if (x < offset) {
+            1 - (x / offset)
         } else {
-            2 * (x - 0.5)
+            (x - offset) / (1 - offset)
         }
+    }
+
+    private fun sawtooth(t: Double): Double {
+        val tAbs = Math.abs(t)
+        return tAbs - tAbs.toInt()
     }
 
     private fun sinusoidal(t: Double): Double {
