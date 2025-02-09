@@ -1,5 +1,7 @@
 package org.example
 
+import kotlin.math.abs
+import kotlin.math.floor
 import org.example.lib.ColourHSB
 import processing.core.PApplet
 
@@ -8,6 +10,7 @@ class Processing : PApplet() {
     private val canvasWidth = 2560
     private val canvasHeight = 1440
     private val gridSize = 20
+    private lateinit var gridPoints: List<GridPoint>
 
     private val secondsToCapture = 60
     private val videoFrameRate = 60
@@ -23,80 +26,93 @@ class Processing : PApplet() {
         background(0)
         noStroke()
         colorMode(HSB, 360F, 100F, 100F)
-    }
-
-    override fun draw() {
-        t++
 
         val leftOffset = (width % gridSize) / 2
         val topOffset = (height % gridSize) / 2
 
-        for (x in 0 until canvasWidth / gridSize) {
-            for (y in 0 until canvasHeight / gridSize) {
-
-                val oddOrEven = (x + y) % 2 == 0
-
+        gridPoints = (0 until canvasWidth / gridSize).flatMap { x ->
+            (0 until canvasHeight / gridSize).map { y ->
                 val gridSquareLeft = leftOffset + (x * gridSize)
-                val gridSquareCenterX = gridSquareLeft + (gridSize / 2)
-                val centerX = canvasWidth / 2
-                val distanceFromCenterX = abs(gridSquareCenterX - centerX)
+                val gridSquareCenterX = gridSquareLeft + (gridSize / 2.0)
+                val centerX = canvasWidth / 2.0
+                val horizontalDistanceFromCenter = abs(gridSquareCenterX - centerX)
 
                 val gridSquareTop = topOffset + (y * gridSize)
-                val gridSquareCenterY = gridSquareTop + (gridSize / 2)
-                val centerY = canvasHeight / 2
-                val distanceFromCenterY = abs(gridSquareCenterY - centerY)
+                val gridSquareCenterY = gridSquareTop + (gridSize / 2.0)
+                val centerY = canvasHeight / 2.0
+                val verticalDistanceFromCenter = abs(gridSquareCenterY - centerY)
 
-                val d = Math.sqrt(
-                    Math.pow(
-                        distanceFromCenterX.toDouble(),
-                        2.0
-                    ) + ((16.0/9.0) * Math.pow(distanceFromCenterY.toDouble(), 2.0))
+                GridPoint(
+                    x = gridSquareLeft,
+                    y = gridSquareTop,
+                    oddOrEven = (x + y) % 2 == 0,
+                    horizontalDistanceFromCenter = horizontalDistanceFromCenter,
+                    verticalDistanceFromCenter = verticalDistanceFromCenter,
+                    radiusFromCenter = Math.sqrt(
+                        Math.pow(horizontalDistanceFromCenter, 2.0) +
+                                ((16.0 / 9.0) * Math.pow(verticalDistanceFromCenter, 2.0))
+                    )
                 )
+            }
+        }
 
-                val innerScale = sinusoidal((t / 1000.0) + (2.323453 * (if (oddOrEven) distanceFromCenterX else distanceFromCenterY) / canvasWidth))
+        gridPoints = gridPoints.sortedBy { it.radiusFromCenter }
+    }
+
+    override fun draw() {
+        t += 1
+        val colourT = t * 0.1
+
+        // background squares
+        gridPoints.forEach {
+            val bgBrightness =
+                (60 * Math.pow(triangle((-t / 600.0) + (4.0 * Math.pow(it.radiusFromCenter / canvasWidth, 0.5)), 0.2), 4.0)) + 10
+
+            square(
+                x = it.x.toDouble(),
+                y = it.y.toDouble(),
+                size = gridSize.toDouble(),
+                rotation = 0.0,
+                innerScale = 1.0,
+                colour = ColourHSB(colourT + 360, 100, bgBrightness),
+            )
+        }
+
+        // foreground shapes
+        gridPoints.forEach {
+            val innerScale =
+                sinusoidal((t / 1000.0) + (5.323453 * (if (it.oddOrEven) it.horizontalDistanceFromCenter else it.verticalDistanceFromCenter) / canvasWidth))
 //                    .let { if (oddOrEven) it else 1 - it }
-                    .let { 0.1 + (0.8 * it) }
+                    .let { 0.1 + (1.0 * it) }
 
-                val fgBrightness1 = (80 * Math.pow(1.0 - triangle((t / 200.0) + (6.0 * Math.pow(d / canvasWidth, 0.5)), 0.1), 2.0)) + 10
-                val fgBrightness2 = (80 * Math.pow(1.0 - triangle((t / 270.0) + (6.0 * Math.pow(d / canvasWidth, 0.5)), 0.1), 2.0)) + 10
-                val bgBrightness = (80 * Math.pow(triangle((-t / 600.0) + (4.0 * Math.pow(d / canvasWidth, 0.5)), 0.2), 4.0)) + 10
+            val fgBrightness1 =
+                (80 * Math.pow(1.0 - triangle((t / 150.0) + (6.0 * Math.pow(it.radiusFromCenter / canvasWidth, 0.5)), 0.1), 2.0)) + 10
+            val fgBrightness2 =
+                (80 * Math.pow(1.0 - triangle((t / 270.0) + (6.0 * Math.pow(it.radiusFromCenter / canvasWidth, 0.5)), 0.1), 2.0)) + 10
 
-                val squareRotation = (t / 1200.0) + d / 200.0
+            val squareRotation = (t / 100.0) + it.radiusFromCenter / 200.0
 
-                val ellipseRotation = (-t / 1000.0) + d / 300.0
+            val ellipseRotation = (-t / 60.0) + it.radiusFromCenter / 300.0
 
-                val colourT = t * 0.1
-
+            if (it.oddOrEven) {
                 square(
-                    x = gridSquareLeft.toDouble(),
-                    y = topOffset + (y.toDouble() * gridSize),
+                    x = it.x.toDouble(),
+                    y = it.y.toDouble(),
                     size = gridSize.toDouble(),
-                    rotation = 0.0,
-                    innerScale = 1.0,
-                    colour = ColourHSB(colourT + 360, 100, bgBrightness),
+                    rotation = squareRotation,
+                    innerScale = innerScale * 0.6,
+                    colour = ColourHSB(colourT + 20, 100, fgBrightness1),
                 )
-
-                if (oddOrEven) {
-                    square(
-                        x = gridSquareLeft.toDouble(),
-                        y = topOffset + (y.toDouble() * gridSize),
-                        size = gridSize.toDouble(),
-                        rotation = squareRotation,
-                        innerScale = innerScale * 0.6,
-//                        axisRatio = 0.4,
-                        colour = ColourHSB(colourT + 20, 100, fgBrightness1),
-                    )
-                } else {
-                    ellipse(
-                        x = gridSquareLeft.toDouble(),
-                        y = topOffset + (y.toDouble() * gridSize),
-                        size = gridSize.toDouble(),
-                        rotation = ellipseRotation,
-                        innerScale = innerScale,
-                        axisRatio = 0.6,
-                        colour = ColourHSB(colourT + 240, 100, fgBrightness2),
-                    )
-                }
+            } else {
+                ellipse(
+                    x = it.x.toDouble(),
+                    y = it.y.toDouble(),
+                    size = gridSize.toDouble(),
+                    rotation = ellipseRotation,
+                    innerScale = innerScale,
+                    axisRatio = 0.5,
+                    colour = ColourHSB(colourT + 240, 100, fgBrightness2),
+                )
             }
         }
 
@@ -145,8 +161,7 @@ class Processing : PApplet() {
     }
 
     private fun triangle(t: Double, offset: Double = 0.5): Double {
-        val tAbs = Math.abs(t)
-        val x = tAbs - tAbs.toInt()
+        val x = t - floor(t)
         return if (x < offset) {
             1 - (x / offset)
         } else {
