@@ -7,7 +7,7 @@ class Processing : PApplet() {
 
     private val canvasWidth = 2560
     private val canvasHeight = 1440
-    private val gridSize = 30
+    private val gridSize = 20
 
     private val secondsToCapture = 60
     private val videoFrameRate = 60
@@ -50,19 +50,22 @@ class Processing : PApplet() {
                     Math.pow(
                         distanceFromCenterX.toDouble(),
                         2.0
-                    ) + ((16.0 / 9.0) * Math.pow(distanceFromCenterY.toDouble(), 2.0))
+                    ) + ((16.0/9.0) * Math.pow(distanceFromCenterY.toDouble(), 2.0))
                 )
 
                 val innerScale = sinusoidal((t / 1000.0) + (2.323453 * (if (oddOrEven) distanceFromCenterX else distanceFromCenterY) / canvasWidth))
 //                    .let { if (oddOrEven) it else 1 - it }
-//                    .let { 0.1 + (0.8 * it) }
+                    .let { 0.1 + (0.8 * it) }
 
-                val fgBrightness = (80 * Math.pow(1.0 - triangle((t / 200.0) + (3.0 * d / canvasWidth), 0.1), 2.0)) + 10
-                val bgBrightness = (80 * Math.pow(triangle((-t / 600.0) + (4.0 * d / canvasWidth)), 2.0)) + 10
+                val fgBrightness1 = (80 * Math.pow(1.0 - triangle((t / 200.0) + (6.0 * Math.pow(d / canvasWidth, 0.5)), 0.1), 2.0)) + 10
+                val fgBrightness2 = (80 * Math.pow(1.0 - triangle((t / 270.0) + (6.0 * Math.pow(d / canvasWidth, 0.5)), 0.1), 2.0)) + 10
+                val bgBrightness = (80 * Math.pow(triangle((-t / 600.0) + (4.0 * Math.pow(d / canvasWidth, 0.5)), 0.2), 4.0)) + 10
 
-                val squareRotation = (t / 120.0) + d / 200.0
+                val squareRotation = (t / 1200.0) + d / 200.0
 
-                val ellipseRotation = (t / 100.0) + d / 300.0
+                val ellipseRotation = (-t / 1000.0) + d / 300.0
+
+                val colourT = t * 0.1
 
                 square(
                     x = gridSquareLeft.toDouble(),
@@ -70,7 +73,7 @@ class Processing : PApplet() {
                     size = gridSize.toDouble(),
                     rotation = 0.0,
                     innerScale = 1.0,
-                    colour = ColourHSB(360, 100, bgBrightness),
+                    colour = ColourHSB(colourT + 360, 100, bgBrightness),
                 )
 
                 if (oddOrEven) {
@@ -81,7 +84,7 @@ class Processing : PApplet() {
                         rotation = squareRotation,
                         innerScale = innerScale * 0.6,
 //                        axisRatio = 0.4,
-                        colour = ColourHSB(240, 100, fgBrightness),
+                        colour = ColourHSB(colourT + 20, 100, fgBrightness1),
                     )
                 } else {
                     ellipse(
@@ -91,7 +94,7 @@ class Processing : PApplet() {
                         rotation = ellipseRotation,
                         innerScale = innerScale,
                         axisRatio = 0.6,
-                        colour = ColourHSB(240, 100, fgBrightness),
+                        colour = ColourHSB(colourT + 240, 100, fgBrightness2),
                     )
                 }
             }
